@@ -7,7 +7,8 @@ app_name = 'users'
 
 # Create router for ViewSet
 router = DefaultRouter()
-router.register(r'', views.UserViewSet, basename='user')
+router.register(r'users', views.UserViewSet, basename='user')
+router.register(r'work-hours', views.WorkHoursViewSet, basename='work-hours')
 
 urlpatterns = [
     # Authentication

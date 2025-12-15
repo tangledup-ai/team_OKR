@@ -209,6 +209,7 @@ class UserAdmin(BaseUserAdmin):
         return form
 
 
+
 # 自定义Admin站点标题和头部
 admin.site.site_header = 'OKR绩效管理系统'
 admin.site.site_title = 'OKR管理后台'

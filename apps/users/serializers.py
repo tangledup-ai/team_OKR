@@ -4,6 +4,7 @@ Serializers for User model
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
 from .models import User, Department
+from apps.reports.models import WorkHours
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -113,3 +114,73 @@ class UserDetailSerializer(serializers.ModelSerializer):
             'is_active', 'created_at', 'updated_at', 'last_login'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'last_login']
+
+
+class WorkHoursSerializer(serializers.ModelSerializer):
+    """工作小时序列化器"""
+    user_name = serializers.CharField(source='user.name', read_only=True)
+    user_email = serializers.CharField(source='user.email', read_only=True)
+    recorded_by_name = serializers.CharField(source='recorded_by.name', read_only=True)
+    
+    class Meta:
+        model = WorkHours
+        fields = [
+            'id', 'user', 'user_name', 'user_email', 'month', 'hours',
+            'recorded_by', 'recorded_by_name', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'recorded_by', 'created_at', 'updated_at']
+    
+    def validate_hours(self, value):
+        """验证工作小时数"""
+        if value < 0:
+            raise serializers.ValidationError('工作小时数不能为负数')
+        if value > 744:  # 31天 * 24小时
+            raise serializers.ValidationError('工作小时数不能超过744小时（一个月最大小时数）')
+        return value
+
+
+class WorkHoursCreateSerializer(serializers.ModelSerializer):
+    """工作小时创建序列化器"""
+    
+    class Meta:
+        model = WorkHours
+        fields = ['user', 'month', 'hours']
+    
+    def validate_hours(self, value):
+        """验证工作小时数"""
+        if value < 0:
+            raise serializers.ValidationError('工作小时数不能为负数')
+        if value > 744:  # 31天 * 24小时
+            raise serializers.ValidationError('工作小时数不能超过744小时（一个月最大小时数）')
+        return value
+    
+    def create(self, validated_data):
+        """创建工作小时记录"""
+        # 设置记录人为当前用户
+        validated_data['recorded_by'] = self.context['request'].user
+        return super().create(validated_data)
+
+
+class WorkHoursUpdateSerializer(serializers.ModelSerializer):
+    """工作小时更新序列化器"""
+    
+    class Meta:
+        model = WorkHours
+        fields = ['hours']
+    
+    def validate_hours(self, value):
+        """验证工作小时数"""
+        if value < 0:
+            raise serializers.ValidationError('工作小时数不能为负数')
+        if value > 744:  # 31天 * 24小时
+            raise serializers.ValidationError('工作小时数不能超过744小时（一个月最大小时数）')
+        return value
+
+
+class MonthlyWorkHoursStatsSerializer(serializers.Serializer):
+    """月度工作小时统计序列化器"""
+    month = serializers.DateField()
+    total_hours = serializers.DecimalField(max_digits=8, decimal_places=2)
+    average_hours = serializers.DecimalField(max_digits=6, decimal_places=2)
+    member_count = serializers.IntegerField()
+    department_stats = serializers.DictField()

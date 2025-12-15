@@ -86,12 +86,14 @@ class WorkHours(models.Model):
         verbose_name='记录人'
     )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='创建时间')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='更新时间')
 
     class Meta:
         db_table = 'work_hours'
         verbose_name = '工作小时'
         verbose_name_plural = '工作小时'
         unique_together = [['user', 'month']]
+        ordering = ['-month', 'user__name']
 
     def __str__(self):
         return f"{self.user.name} - {self.month.strftime('%Y年%m月')} - {self.hours}小时"
