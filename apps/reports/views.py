@@ -20,7 +20,8 @@ from .serializers import (
     MonthlyEvaluationSerializer, SelfEvaluationCreateSerializer,
     PeerEvaluationSerializer, PeerEvaluationCreateSerializer,
     AdminFinalEvaluationSerializer, MonthlyEvaluationSummarySerializer,
-    WorkHoursSerializer, WorkHoursCreateSerializer, AdminEvaluationHistorySerializer
+    WorkHoursSerializer, WorkHoursCreateSerializer, AdminEvaluationHistorySerializer,
+    PerformanceScoreSerializer, DepartmentReportSerializer, MonthlyReportSerializer
 )
 
 User = get_user_model()
@@ -706,3 +707,153 @@ class WorkHoursViewSet(viewsets.ModelViewSet):
             )
         
         return super().destroy(request, *args, **kwargs)
+
+
+class PerformanceScoreViewSet(viewsets.ReadOnlyModelViewSet):
+    """绩效分值视图集"""
+    serializer_class = PerformanceScoreSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """获取查询集"""
+        if getattr(self, 'swagger_fake_view', False):
+            return PerformanceScore.objects.none()
+            
+        queryset = PerformanceScore.objects.all()
+        
+        # 过滤参数
+        month = self.request.query_params.get('month')
+        user_id = self.request.query_params.get('user_id')
+        department = self.request.query_params.get('department')
+        
+        if month:
+            queryset = queryset.filter(month=month)
+        if user_id:
+            queryset = queryset.filter(user_id=user_id)
+        if department:
+            queryset = queryset.filter(user__department=department)
+            
+        # 排序
+        queryset = queryset.order_by('-final_score')
+        
+        return queryset.select_related('user')
+    
+    @action(detail=False, methods=['get'], url_path='user')
+    def get_user_score(self, request):
+        """获取指定用户的绩效分值"""
+        user_id = request.query_params.get('user_id')
+        month = request.query_params.get('month')
+        
+        if not user_id or not month:
+            return Response(
+                {'error': '必须指定用户ID和月份'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        score = PerformanceScore.objects.filter(
+            user_id=user_id,
+            month=month
+        ).first()
+        
+        if not score:
+            return Response(
+                {'message': '未找到该用户的绩效分值'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+            
+        serializer = self.get_serializer(score)
+        return Response(serializer.data)
+        
+    @action(detail=False, methods=['get'], url_path='department')
+    def get_department_scores(self, request):
+        """获取指定部门的绩效分值"""
+        department = request.query_params.get('department')
+        month = request.query_params.get('month')
+        
+        if not department or not month:
+            return Response(
+                {'error': '必须指定部门和月份'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        scores = PerformanceScore.objects.filter(
+            user__department=department,
+            month=month
+        ).order_by('-final_score')
+        
+        page = self.paginate_queryset(scores)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+            
+        serializer = self.get_serializer(scores, many=True)
+        return Response(serializer.data)
+
+
+class MonthlyReportViewSet(viewsets.ReadOnlyModelViewSet):
+    """月度报告视图集"""
+    serializer_class = MonthlyReportSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """获取查询集"""
+        if getattr(self, 'swagger_fake_view', False):
+            return MonthlyReport.objects.none()
+            
+        return MonthlyReport.objects.all().order_by('-month')
+        
+    @action(detail=False, methods=['get'], url_path='overview')
+    def overview(self, request):
+        """获取月度报告概览"""
+        month = request.query_params.get('month')
+        if not month:
+            return Response(
+                {'error': '必须指定月份'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        report = MonthlyReport.objects.filter(month=month).first()
+        if not report:
+            # 尝试自动生成或返回空
+            return Response(
+                {'message': '该月份报告尚未生成'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+            
+        serializer = self.get_serializer(report)
+        return Response(serializer.data)
+        
+    @action(detail=False, methods=['get'], url_path='department-stats')
+    def department_stats(self, request):
+        """获取部门统计信息"""
+        month = request.query_params.get('month')
+        if not month:
+            return Response(
+                {'error': '必须指定月份'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        # 如果已有部门报告，直接返回
+        dept_reports = DepartmentReport.objects.filter(monthly_report__month=month)
+        if dept_reports.exists():
+            serializer = DepartmentReportSerializer(dept_reports, many=True)
+            return Response(serializer.data)
+            
+        # 否则实时计算
+        # 这里为了简化，我们假设如果没有生成报告，就返回空列表
+        # 实际应用中可能需要实时聚合计算
+        return Response([])
+        
+    @action(detail=False, methods=['get'], url_path='rankings')
+    def rankings(self, request):
+        """获取月度排名"""
+        month = request.query_params.get('month')
+        if not month:
+            return Response(
+                {'error': '必须指定月份'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        scores = PerformanceScore.objects.filter(month=month).order_by('rank')
+        serializer = PerformanceScoreSerializer(scores, many=True)
+        return Response(serializer.data)

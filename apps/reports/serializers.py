@@ -387,3 +387,51 @@ class AdminEvaluationHistorySerializer(serializers.ModelSerializer):
     def get_evaluatee(self, obj):
         """获取被评价人信息"""
         return UserBasicSerializer(obj.monthly_evaluation.user).data
+
+
+class PerformanceScoreSerializer(serializers.ModelSerializer):
+    """绩效分值序列化器"""
+    user = UserBasicSerializer(read_only=True)
+    
+    class Meta:
+        model = PerformanceScore
+        fields = [
+            'id', 'user', 'month',
+            'work_hours', 'work_hours_score',
+            'completion_rate', 'completion_rate_score',
+            'avg_difficulty_score',
+            'total_revenue', 'revenue_score',
+            'department_avg_score',
+            'task_rating_score',
+            'culture_understanding_score',
+            'team_fit_score',
+            'monthly_growth_score',
+            'biggest_contribution_score',
+            'peer_evaluation_score',
+            'admin_final_score',
+            'final_score', 'rank',
+            'calculated_at'
+        ]
+        read_only_fields = ['id', 'calculated_at']
+
+
+class DepartmentReportSerializer(serializers.ModelSerializer):
+    """部门报告序列化器"""
+    department_display = serializers.CharField(source='get_department_display', read_only=True)
+    
+    class Meta:
+        model = DepartmentReport
+        fields = [
+            'id', 'department', 'department_display',
+            'total_okr_score', 'member_count',
+            'avg_score', 'completed_tasks', 'avg_difficulty'
+        ]
+
+
+class MonthlyReportSerializer(serializers.ModelSerializer):
+    """月度报告序列化器"""
+    department_reports = DepartmentReportSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = MonthlyReport
+        fields = ['id', 'month', 'generated_at', 'department_reports']

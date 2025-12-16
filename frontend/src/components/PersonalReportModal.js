@@ -30,8 +30,8 @@ const PersonalReportModal = ({ user, month, onClose }) => {
 
       // Load monthly evaluation
       try {
-        const evalData = await evaluationService.getMyEvaluation(month);
-        if (evalData.user.id === user.id) {
+        const evalData = await evaluationService.getUserEvaluation(user.id, month);
+        if (evalData) {
           setMonthlyEvaluation(evalData);
         }
       } catch (err) {

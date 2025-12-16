@@ -20,11 +20,15 @@ RUN pip install --upgrade pip && \
 # Copy project
 COPY . /app/
 
-# Collect static files
-RUN python manage.py collectstatic --noinput || true
+# Copy entrypoint
+COPY docker-entrypoint.sh /app/
+RUN chmod +x /app/docker-entrypoint.sh
 
 # Expose port
 EXPOSE 8000
+
+# Entrypoint
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 
 # Run the application
 CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]

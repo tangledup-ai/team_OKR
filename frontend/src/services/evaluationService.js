@@ -33,6 +33,13 @@ export const evaluationService = {
     return response.data;
   },
 
+  getUserEvaluation: async (userId, month) => {
+    const response = await api.get(`/api/reports/monthly-evaluations/?user=${userId}&month=${month}`);
+    // Handle both paginated and non-paginated responses
+    const results = response.data.results || response.data;
+    return Array.isArray(results) ? results[0] : results;
+  },
+
   getTeamMembers: async () => {
     const response = await api.get('/api/reports/monthly-evaluations/team-members/');
     return response.data;
