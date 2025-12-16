@@ -1,0 +1,97 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}">
+        <span style="color: #007BFF; font-weight: bold;">🎯 OKR绩效管理系统</span>
+    </a>
+</h1>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    /* 自定义样式 */
+    #header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    #site-name a {
+        color: white !important;
+        text-decoration: none;
+    }
+    
+    #site-name a:hover {
+        color: #f8f9fa !important;
+    }
+    
+    .module h2, .module caption, .inline-group h2 {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .button, input[type=submit], input[type=button], .submit-row input, a.button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+    }
+    
+    .button:hover, input[type=submit]:hover, input[type=button]:hover, .submit-row input:hover, a.button:hover {
+        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    }
+    
+    .selector-chosen h2 {
+        background: #28a745;
+    }
+    
+    .selector-available h2 {
+        background: #6c757d;
+    }
+    
+    /* 统计信息样式 */
+    .stats-container {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 15px;
+        margin: 20px 0;
+    }
+    
+    .stats-item {
+        display: inline-block;
+        margin-right: 20px;
+        padding: 10px;
+        background: white;
+        border-radius: 3px;
+        border-left: 4px solid #007BFF;
+    }
+    
+    .stats-item strong {
+        color: #007BFF;
+        font-size: 18px;
+    }
+    
+    /* 表格样式优化 */
+    .results table {
+        border-collapse: collapse;
+    }
+    
+    .results th {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 2px solid #007BFF;
+    }
+    
+    .results tr:nth-child(even) {
+        background-color: #f8f9fa;
+    }
+    
+    .results tr:hover {
+        background-color: #e3f2fd;
+    }
+</style>
+{% endblock %}

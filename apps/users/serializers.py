@@ -129,6 +129,7 @@ class WorkHoursSerializer(serializers.ModelSerializer):
             'recorded_by', 'recorded_by_name', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'recorded_by', 'created_at', 'updated_at']
+        ref_name = 'UsersWorkHours'
     
     def validate_hours(self, value):
         """验证工作小时数"""
@@ -145,6 +146,7 @@ class WorkHoursCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = WorkHours
         fields = ['user', 'month', 'hours']
+        ref_name = 'UsersWorkHoursCreate'
     
     def validate_hours(self, value):
         """验证工作小时数"""
@@ -167,6 +169,7 @@ class WorkHoursUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = WorkHours
         fields = ['hours']
+        ref_name = 'UsersWorkHoursUpdate'
     
     def validate_hours(self, value):
         """验证工作小时数"""

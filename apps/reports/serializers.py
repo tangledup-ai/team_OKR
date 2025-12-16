@@ -256,7 +256,7 @@ class AdminFinalEvaluationSerializer(serializers.ModelSerializer):
         if not request or not request.user.is_authenticated:
             raise serializers.ValidationError("用户未认证")
         
-        if request.user.role != 'admin':
+        if not (request.user.is_authenticated and hasattr(request.user, 'role') and request.user.role == 'admin'):
             raise serializers.ValidationError("只有管理员才能提交最终评价")
         
         return data
@@ -315,6 +315,7 @@ class WorkHoursSerializer(serializers.ModelSerializer):
         model = WorkHours
         fields = ['id', 'user', 'month', 'hours', 'recorded_by', 'created_at']
         read_only_fields = ['id', 'recorded_by', 'created_at']
+        ref_name = 'ReportsWorkHours'
 
 
 class WorkHoursCreateSerializer(serializers.ModelSerializer):
@@ -324,6 +325,7 @@ class WorkHoursCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = WorkHours
         fields = ['user_id', 'month', 'hours']
+        ref_name = 'ReportsWorkHoursCreate'
     
     def validate_hours(self, value):
         """验证工作小时"""
@@ -347,7 +349,7 @@ class WorkHoursCreateSerializer(serializers.ModelSerializer):
         if not request or not request.user.is_authenticated:
             raise serializers.ValidationError("用户未认证")
         
-        if request.user.role != 'admin':
+        if not (request.user.is_authenticated and hasattr(request.user, 'role') and request.user.role == 'admin'):
             raise serializers.ValidationError("只有管理员才能录入工作小时")
         
         # 检查是否已经存在该用户该月份的记录

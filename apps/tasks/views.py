@@ -28,7 +28,14 @@ class TaskViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """获取当前用户可见的任务"""
+        # Handle Swagger schema generation
+        if getattr(self, 'swagger_fake_view', False):
+            return Task.objects.none()
+            
         user = self.request.user
+        if not user.is_authenticated:
+            return Task.objects.none()
+            
         # 用户可以看到自己作为负责人或协作者的任务
         return Task.objects.filter(
             Q(owner=user) | Q(collaborators=user)
@@ -45,11 +52,32 @@ class TaskViewSet(viewsets.ModelViewSet):
         return TaskSerializer
     
     @swagger_auto_schema(
-        operation_description="创建新任务",
+        operation_summary="创建新任务",
+        operation_description="""
+        创建新的任务项目。
+        
+        任务创建后初始状态为"未完成"(todo)。
+        需要指定负责人，可选择添加协作者。
+        难度分值范围为1-10，变现金额必须为非负数。
+        """,
+        tags=['任务管理'],
         request_body=TaskCreateSerializer,
         responses={
-            201: TaskSerializer,
-            400: "验证错误"
+            201: openapi.Response(
+                description="任务创建成功",
+                schema=TaskSerializer
+            ),
+            400: openapi.Response(
+                description="验证错误",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'difficulty_score': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_STRING)),
+                        'owner_id': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_STRING)),
+                        'collaborator_ids': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_STRING))
+                    }
+                )
+            )
         }
     )
     def create(self, request, *args, **kwargs):
@@ -63,14 +91,22 @@ class TaskViewSet(viewsets.ModelViewSet):
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
     
     @swagger_auto_schema(
-        operation_description="获取任务列表",
+        operation_summary="获取任务列表",
+        operation_description="""
+        获取当前用户可见的任务列表。
+        
+        用户只能看到自己作为负责人或协作者的任务。
+        支持按状态、负责人、难度分值等条件过滤。
+        """,
+        tags=['任务管理'],
         manual_parameters=[
             openapi.Parameter(
                 'status',
                 openapi.IN_QUERY,
                 description="按状态过滤任务",
                 type=openapi.TYPE_STRING,
-                enum=[choice[0] for choice in TaskStatus.choices]
+                enum=[choice[0] for choice in TaskStatus.choices],
+                example="todo"
             ),
             openapi.Parameter(
                 'owner',
@@ -83,10 +119,17 @@ class TaskViewSet(viewsets.ModelViewSet):
                 'difficulty_score',
                 openapi.IN_QUERY,
                 description="按难度分值过滤任务",
-                type=openapi.TYPE_INTEGER
+                type=openapi.TYPE_INTEGER,
+                minimum=1,
+                maximum=10
             ),
         ],
-        responses={200: TaskListSerializer(many=True)}
+        responses={
+            200: openapi.Response(
+                description="成功获取任务列表",
+                schema=TaskListSerializer(many=True)
+            )
+        }
     )
     def list(self, request, *args, **kwargs):
         """获取任务列表（支持按状态过滤）"""
@@ -344,7 +387,14 @@ class ScoreDistributionViewSet(viewsets.ReadOnlyModelViewSet):
     
     def get_queryset(self):
         """获取当前用户相关的分值分配"""
+        # Handle Swagger schema generation
+        if getattr(self, 'swagger_fake_view', False):
+            return ScoreDistribution.objects.none()
+            
         user = self.request.user
+        if not user.is_authenticated:
+            return ScoreDistribution.objects.none()
+            
         # 用户可以看到自己参与的任务的分值分配
         return ScoreDistribution.objects.filter(
             Q(task__owner=user) | Q(task__collaborators=user)
@@ -385,7 +435,14 @@ class ScoreAllocationViewSet(viewsets.ReadOnlyModelViewSet):
     
     def get_queryset(self):
         """获取当前用户的分值分配明细"""
+        # Handle Swagger schema generation
+        if getattr(self, 'swagger_fake_view', False):
+            return ScoreAllocation.objects.none()
+            
         user = self.request.user
+        if not user.is_authenticated:
+            return ScoreAllocation.objects.none()
+            
         return ScoreAllocation.objects.filter(user=user).select_related(
             'distribution__task', 'user'
         ).order_by('-distribution__calculated_at')

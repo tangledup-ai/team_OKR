@@ -1,8 +1,8 @@
 import React from 'react';
 import { useDrag } from 'react-dnd';
-import { UserIcon, CalendarIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
+import { UserIcon, CalendarIcon, CurrencyDollarIcon, StarIcon } from '@heroicons/react/24/outline';
 
-const TaskCard = ({ task, onClick, currentUser }) => {
+const TaskCard = ({ task, onClick, currentUser, onReview }) => {
   const [{ isDragging }, drag] = useDrag({
     type: 'task',
     item: { id: task.id, status: task.status },
@@ -32,6 +32,17 @@ const TaskCard = ({ task, onClick, currentUser }) => {
 
   const canEdit = task.owner?.id === currentUser?.id || 
                   task.collaborators?.some(c => c.id === currentUser?.id);
+
+  const canReview = task.status === 'completed' && 
+                   task.owner?.id !== currentUser?.id && 
+                   !task.collaborators?.some(c => c.id === currentUser?.id);
+
+  const handleReviewClick = (e) => {
+    e.stopPropagation();
+    if (onReview) {
+      onReview(task);
+    }
+  };
 
   return (
     <div
@@ -100,9 +111,21 @@ const TaskCard = ({ task, onClick, currentUser }) => {
         </div>
       )}
 
-      {!canEdit && (
+      {!canEdit && !canReview && (
         <div className="mt-2 text-xs text-gray-400">
           只读 - 您不是此任务的参与者
+        </div>
+      )}
+
+      {canReview && (
+        <div className="mt-2">
+          <button
+            onClick={handleReviewClick}
+            className="w-full flex items-center justify-center space-x-1 px-2 py-1 text-xs font-medium text-primary-600 bg-primary-50 border border-primary-200 rounded hover:bg-primary-100 transition-colors"
+          >
+            <StarIcon className="h-3 w-3" />
+            <span>评价任务</span>
+          </button>
         </div>
       )}
     </div>

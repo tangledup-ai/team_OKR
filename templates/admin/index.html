@@ -1,0 +1,130 @@
+{% extends "admin/index.html" %}
+{% load i18n static %}
+
+{% block content %}
+{% if stats %}
+<div class="stats-container" style="margin-bottom: 30px;">
+    <h2 style="color: #007BFF; margin-bottom: 20px;">📊 系统概览</h2>
+    
+    <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
+        <div class="stats-item" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <div><strong style="font-size: 24px; color: white;">{{ stats.total_users }}</strong></div>
+            <div>总用户数</div>
+        </div>
+        <div class="stats-item" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white;">
+            <div><strong style="font-size: 24px; color: white;">{{ stats.active_users }}</strong></div>
+            <div>活跃用户</div>
+        </div>
+        <div class="stats-item" style="background: linear-gradient(135deg, #17a2b8 0%, #6f42c1 100%); color: white;">
+            <div><strong style="font-size: 24px; color: white;">{{ stats.total_tasks }}</strong></div>
+            <div>总任务数</div>
+        </div>
+        <div class="stats-item" style="background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%); color: white;">
+            <div><strong style="font-size: 24px; color: white;">{{ stats.completed_tasks }}</strong></div>
+            <div>已完成任务</div>
+        </div>
+        <div class="stats-item" style="background: linear-gradient(135deg, #007bff 0%, #6610f2 100%); color: white;">
+            <div><strong style="font-size: 24px; color: white;">{{ stats.in_progress_tasks }}</strong></div>
+            <div>进行中任务</div>
+        </div>
+        <div class="stats-item" style="background: linear-gradient(135deg, #e83e8c 0%, #fd7e14 100%); color: white;">
+            <div><strong style="font-size: 24px; color: white;">{{ stats.total_reviews }}</strong></div>
+            <div>总评价数</div>
+        </div>
+        <div class="stats-item" style="background: linear-gradient(135deg, #6c757d 0%, #495057 100%); color: white;">
+            <div><strong style="font-size: 24px; color: white;">{{ stats.total_evaluations }}</strong></div>
+            <div>月度评价数</div>
+        </div>
+        {% if stats.pending_admin_evaluations > 0 %}
+        <div class="stats-item" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white;">
+            <div><strong style="font-size: 24px; color: white;">{{ stats.pending_admin_evaluations }}</strong></div>
+            <div>待管理员评价</div>
+        </div>
+        {% endif %}
+    </div>
+    
+    {% if dept_stats %}
+    <div style="margin-top: 20px;">
+        <h3 style="color: #6c757d; margin-bottom: 15px;">👥 部门分布</h3>
+        <div style="display: flex; gap: 15px;">
+            {% for dept in dept_stats %}
+            <div class="stats-item">
+                <div><strong style="font-size: 20px;">{{ dept.count }}</strong></div>
+                <div>
+                    {% if dept.department == 'hardware' %}硬件部门
+                    {% elif dept.department == 'software' %}软件部门
+                    {% elif dept.department == 'marketing' %}市场部门
+                    {% else %}{{ dept.department }}{% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% if recent_tasks or recent_reviews %}
+<div style="display: flex; gap: 30px; margin-bottom: 30px;">
+    {% if recent_tasks %}
+    <div style="flex: 1; background: #f8f9fa; padding: 20px; border-radius: 5px;">
+        <h3 style="color: #007BFF; margin-bottom: 15px;">📋 最新任务</h3>
+        {% for task in recent_tasks %}
+        <div style="padding: 10px; margin-bottom: 10px; background: white; border-radius: 3px; border-left: 4px solid #007BFF;">
+            <strong>{{ task.title }}</strong><br>
+            <small style="color: #6c757d;">
+                负责人: {{ task.owner.name }} | 
+                状态: {{ task.get_status_display }} | 
+                {{ task.created_at|date:"m-d H:i" }}
+            </small>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    {% if recent_reviews %}
+    <div style="flex: 1; background: #f8f9fa; padding: 20px; border-radius: 5px;">
+        <h3 style="color: #28a745; margin-bottom: 15px;">💬 最新评价</h3>
+        {% for review in recent_reviews %}
+        <div style="padding: 10px; margin-bottom: 10px; background: white; border-radius: 3px; border-left: 4px solid #28a745;">
+            <strong>{{ review.get_type_display }} - {{ review.rating }}分</strong><br>
+            <small style="color: #6c757d;">
+                评价人: {{ review.reviewer.name }} | 
+                {{ review.created_at|date:"m-d H:i" }}
+            </small>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+{% endif %}
+
+{{ block.super }}
+
+<style>
+.stats-item {
+    display: inline-block;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    border-left: 4px solid #007BFF;
+    text-align: center;
+    min-width: 120px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+.stats-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.stats-container {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 25px;
+    margin: 20px 0;
+}
+</style>
+{% endblock %}

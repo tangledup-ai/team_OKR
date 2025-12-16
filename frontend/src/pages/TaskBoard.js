@@ -4,6 +4,7 @@ import { taskService } from '../services/taskService';
 import TaskColumn from '../components/TaskColumn';
 import TaskModal from '../components/TaskModal';
 import CreateTaskModal from '../components/CreateTaskModal';
+import TaskReviewModal from '../components/TaskReviewModal';
 import Header from '../components/Header';
 
 const TASK_STATUSES = {
@@ -27,6 +28,8 @@ const TaskBoard = () => {
   const [error, setError] = useState('');
   const [selectedTask, setSelectedTask] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewTask, setReviewTask] = useState(null);
   const [users, setUsers] = useState([]);
 
   useEffect(() => {
@@ -100,6 +103,16 @@ const TaskBoard = () => {
     return tasks.filter(task => task.status === status);
   };
 
+  const handleTaskReview = (task) => {
+    setReviewTask(task);
+    setShowReviewModal(true);
+  };
+
+  const handleReviewSubmit = () => {
+    // Refresh tasks to update any changes
+    loadTasks();
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -128,6 +141,7 @@ const TaskBoard = () => {
               tasks={getTasksByStatus(status)}
               onTaskMove={handleTaskMove}
               onTaskClick={setSelectedTask}
+              onTaskReview={handleTaskReview}
               currentUser={user}
             />
           ))}
@@ -149,6 +163,18 @@ const TaskBoard = () => {
           users={users}
           onClose={() => setShowCreateModal(false)}
           onCreate={handleTaskCreate}
+          currentUser={user}
+        />
+      )}
+
+      {showReviewModal && reviewTask && (
+        <TaskReviewModal
+          task={reviewTask}
+          onClose={() => {
+            setShowReviewModal(false);
+            setReviewTask(null);
+          }}
+          onSubmit={handleReviewSubmit}
           currentUser={user}
         />
       )}

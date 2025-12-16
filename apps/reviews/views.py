@@ -25,6 +25,10 @@ class ReviewViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """获取查询集"""
+        # Handle Swagger schema generation
+        if getattr(self, 'swagger_fake_view', False):
+            return Review.objects.none()
+            
         queryset = Review.objects.all()
         
         # 过滤参数
@@ -46,11 +50,34 @@ class ReviewViewSet(viewsets.ModelViewSet):
     
     @swagger_auto_schema(
         method='post',
-        operation_description="提交任务评价",
+        operation_summary="提交任务评价",
+        operation_description="""
+        对已完成的任务进行评价。
+        
+        评分范围为1-10分，可选择匿名评价。
+        管理员评价具有更高权重。
+        提交评价后会自动重新计算任务的分值调整系数。
+        
+        **限制**: 每个用户对每个任务只能评价一次
+        """,
+        tags=['评价系统'],
         request_body=TaskReviewCreateSerializer,
         responses={
-            201: ReviewSerializer,
-            400: "验证错误"
+            201: openapi.Response(
+                description="任务评价提交成功",
+                schema=ReviewSerializer
+            ),
+            400: openapi.Response(
+                description="验证错误",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'task': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_STRING)),
+                        'rating': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_STRING)),
+                        'non_field_errors': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_STRING))
+                    }
+                )
+            )
         }
     )
     @action(detail=False, methods=['post'], url_path='task-review')

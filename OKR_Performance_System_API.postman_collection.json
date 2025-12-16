@@ -1,0 +1,569 @@
+{
+	"info": {
+		"_postman_id": "okr-performance-system-api",
+		"name": "OKR Performance System API",
+		"description": "团队OKR任务看板和绩效得分系统 API 集合",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{access_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000/api",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "user_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "task_id",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "用户认证",
+			"item": [
+				{
+					"name": "用户登录",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('access_token', response.access);",
+									"    pm.collectionVariables.set('user_id', response.user.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"admin@example.com\",\n    \"password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/users/login/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"login",
+								""
+							]
+						}
+					}
+				},
+				{
+					"name": "注册新成员（管理员）",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"newuser@example.com\",\n    \"name\": \"新用户\",\n    \"password\": \"newuser123\",\n    \"password_confirm\": \"newuser123\",\n    \"department\": \"software\",\n    \"role\": \"member\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/users/register/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"register",
+								""
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "用户管理",
+			"item": [
+				{
+					"name": "获取团队成员列表",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/users/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								""
+							]
+						}
+					}
+				},
+				{
+					"name": "获取当前用户信息",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/users/me/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"me",
+								""
+							]
+						}
+					}
+				},
+				{
+					"name": "按部门查询成员",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/users/by-department/software/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"by-department",
+								"software",
+								""
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "工作小时管理",
+			"item": [
+				{
+					"name": "获取工作小时记录",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/users/work-hours/?month=2024-01",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"work-hours",
+								""
+							],
+							"query": [
+								{
+									"key": "month",
+									"value": "2024-01"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "创建工作小时记录（管理员）",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user\": \"{{user_id}}\",\n    \"month\": \"2024-01-01\",\n    \"hours\": 160.5\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/users/work-hours/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"work-hours",
+								""
+							]
+						}
+					}
+				},
+				{
+					"name": "月度工作小时统计",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/users/work-hours/monthly-stats/?month=2024-01",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"work-hours",
+								"monthly-stats",
+								""
+							],
+							"query": [
+								{
+									"key": "month",
+									"value": "2024-01"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "任务管理",
+			"item": [
+				{
+					"name": "获取任务列表",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/tasks/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tasks",
+								""
+							]
+						}
+					}
+				},
+				{
+					"name": "创建新任务",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('task_id', response.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"开发用户认证模块\",\n    \"description\": \"实现JWT认证和权限管理功能\",\n    \"difficulty_score\": 8,\n    \"revenue_amount\": \"5000.00\",\n    \"owner_id\": \"{{user_id}}\",\n    \"collaborator_ids\": []\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/tasks/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tasks",
+								""
+							]
+						}
+					}
+				},
+				{
+					"name": "按状态分组获取任务",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/tasks/by_status/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tasks",
+								"by_status",
+								""
+							]
+						}
+					}
+				},
+				{
+					"name": "更新任务状态",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"completed\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/tasks/{{task_id}}/update_status/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tasks",
+								"{{task_id}}",
+								"update_status",
+								""
+							]
+						}
+					}
+				},
+				{
+					"name": "获取用户任务统计",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/tasks/stats/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"tasks",
+								"stats",
+								""
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "评价系统",
+			"item": [
+				{
+					"name": "提交任务评价",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"task\": \"{{task_id}}\",\n    \"rating\": 9,\n    \"comment\": \"任务完成质量很高，代码规范\",\n    \"is_anonymous\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/reviews/task-review/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"reviews",
+								"task-review",
+								""
+							]
+						}
+					}
+				},
+				{
+					"name": "获取任务评价汇总",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/reviews/task-summary/{{task_id}}/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"reviews",
+								"task-summary",
+								"{{task_id}}",
+								""
+							]
+						}
+					}
+				},
+				{
+					"name": "提交月度评价",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reviewee\": \"{{user_id}}\",\n    \"rating\": 8,\n    \"comment\": \"本月表现良好，积极配合团队工作\",\n    \"is_anonymous\": false,\n    \"month\": \"2024-01-01\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/reviews/monthly-review/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"reviews",
+								"monthly-review",
+								""
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "月度评价",
+			"item": [
+				{
+					"name": "提交自我评价",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"month\": \"2024-01-01\",\n    \"culture_understanding_score\": 8,\n    \"culture_understanding_text\": \"深入理解公司文化价值观\",\n    \"culture_understanding_option\": \"积极践行\",\n    \"team_fit_option\": \"很好融入\",\n    \"team_fit_text\": \"与团队协作顺畅\",\n    \"team_fit_ranking\": [],\n    \"monthly_growth_score\": 7,\n    \"monthly_growth_text\": \"技术能力有所提升\",\n    \"monthly_growth_option\": \"持续学习\",\n    \"biggest_contribution_score\": 9,\n    \"biggest_contribution_text\": \"完成了核心认证模块\",\n    \"biggest_contribution_option\": \"技术突破\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/reports/monthly-evaluations/self-evaluation/",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"reports",
+								"monthly-evaluations",
+								"self-evaluation",
+								""
+							]
+						}
+					}
+				},
+				{
+					"name": "提交他人评价",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"evaluee_id\": \"{{user_id}}\",\n    \"score\": 8,\n    \"ranking\": 2,\n    \"comment\": \"工作认真负责，团队合作能力强\",\n    \"is_anonymous\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/reports/monthly-evaluations/peer-evaluation/?month=2024-01-01",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"reports",
+								"monthly-evaluations",
+								"peer-evaluation",
+								""
+							],
+							"query": [
+								{
+									"key": "month",
+									"value": "2024-01-01"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "获取月度评价汇总",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/reports/monthly-evaluations/summary/?month=2024-01-01",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"reports",
+								"monthly-evaluations",
+								"summary",
+								""
+							],
+							"query": [
+								{
+									"key": "month",
+									"value": "2024-01-01"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "管理员查看所有评价",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/reports/monthly-evaluations/admin-view-all/?month=2024-01-01",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"reports",
+								"monthly-evaluations",
+								"admin-view-all",
+								""
+							],
+							"query": [
+								{
+									"key": "month",
+									"value": "2024-01-01"
+								}
+							]
+						}
+					}
+				}
+			]
+		}
+	]
+}

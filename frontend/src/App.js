@@ -5,6 +5,7 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import LoginPage from './pages/LoginPage';
 import TaskBoard from './pages/TaskBoard';
+import EvaluationPage from './pages/EvaluationPage';
 import './App.css';
 
 function ProtectedRoute({ children }) {
@@ -34,6 +35,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <TaskBoard />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/evaluations" 
+                element={
+                  <ProtectedRoute>
+                    <EvaluationPage />
                   </ProtectedRoute>
                 } 
               />

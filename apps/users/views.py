@@ -34,7 +34,8 @@ class IsAdminUser(permissions.BasePermission):
     自定义权限：只允许管理员访问
     """
     def has_permission(self, request, view):
-        return request.user and request.user.is_authenticated and request.user.role == 'admin'
+        return (request.user and request.user.is_authenticated and 
+                hasattr(request.user, 'role') and request.user.role == 'admin')
 
 
 class LoginView(APIView):
@@ -42,15 +43,39 @@ class LoginView(APIView):
     permission_classes = [AllowAny]
     
     @swagger_auto_schema(
-        operation_description="用户登录",
+        operation_summary="用户登录",
+        operation_description="""
+        用户通过邮箱和密码进行登录认证。
+        
+        成功登录后返回JWT访问令牌和刷新令牌，以及用户基本信息。
+        访问令牌用于后续API调用的认证。
+        """,
+        tags=['用户认证'],
         request_body=LoginSerializer,
         responses={
             200: openapi.Response(
                 description="登录成功",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'refresh': openapi.Schema(type=openapi.TYPE_STRING, description='刷新令牌'),
+                        'access': openapi.Schema(type=openapi.TYPE_STRING, description='访问令牌'),
+                        'user': openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'id': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_UUID, description='用户ID'),
+                                'email': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_EMAIL, description='邮箱'),
+                                'name': openapi.Schema(type=openapi.TYPE_STRING, description='姓名'),
+                                'department': openapi.Schema(type=openapi.TYPE_STRING, description='部门', enum=['hardware', 'software', 'marketing']),
+                                'role': openapi.Schema(type=openapi.TYPE_STRING, description='角色', enum=['admin', 'member'])
+                            }
+                        )
+                    }
+                ),
                 examples={
                     "application/json": {
-                        "refresh": "eyJ0eXAiOiJKV1QiLCJhbGc...",
-                        "access": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+                        "refresh": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+                        "access": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
                         "user": {
                             "id": "123e4567-e89b-12d3-a456-426614174000",
                             "email": "user@example.com",
@@ -61,8 +86,25 @@ class LoginView(APIView):
                     }
                 }
             ),
-            400: "请求参数错误",
-            401: "邮箱或密码错误"
+            400: openapi.Response(
+                description="请求参数错误",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'email': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_STRING)),
+                        'password': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_STRING))
+                    }
+                )
+            ),
+            401: openapi.Response(
+                description="认证失败",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'error': openapi.Schema(type=openapi.TYPE_STRING, example='邮箱或密码错误')
+                    }
+                )
+            )
         }
     )
     def post(self, request):
@@ -102,12 +144,42 @@ class RegisterView(APIView):
     permission_classes = [IsAuthenticated, IsAdminUser]
     
     @swagger_auto_schema(
-        operation_description="管理员注册新团队成员",
+        operation_summary="注册新团队成员",
+        operation_description="""
+        管理员创建新的团队成员账户。
+        
+        需要提供成员的基本信息包括姓名、邮箱、密码和所属部门。
+        系统会自动生成唯一的用户ID。
+        
+        **权限要求**: 仅管理员可访问
+        """,
+        tags=['用户管理'],
         request_body=UserCreateSerializer,
         responses={
-            201: UserSerializer,
-            400: "请求参数错误",
-            403: "权限不足"
+            201: openapi.Response(
+                description="用户创建成功",
+                schema=UserSerializer
+            ),
+            400: openapi.Response(
+                description="请求参数错误",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'email': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_STRING)),
+                        'password': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_STRING)),
+                        'department': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_STRING))
+                    }
+                )
+            ),
+            403: openapi.Response(
+                description="权限不足",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'detail': openapi.Schema(type=openapi.TYPE_STRING, example='您没有执行该操作的权限。')
+                    }
+                )
+            )
         }
     )
     def post(self, request):
@@ -156,39 +228,119 @@ class UserViewSet(viewsets.ModelViewSet):
         return [IsAuthenticated()]
     
     @swagger_auto_schema(
-        operation_description="获取所有团队成员列表",
-        responses={200: UserSerializer(many=True)}
+        operation_summary="获取团队成员列表",
+        operation_description="获取所有团队成员的基本信息列表",
+        tags=['用户管理'],
+        responses={
+            200: openapi.Response(
+                description="成功获取团队成员列表",
+                schema=UserSerializer(many=True)
+            )
+        }
     )
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
     
     @swagger_auto_schema(
-        operation_description="获取单个成员详情",
-        responses={200: UserDetailSerializer}
+        operation_summary="获取成员详情",
+        operation_description="获取指定成员的详细信息，包括最后登录时间等",
+        tags=['用户管理'],
+        responses={
+            200: openapi.Response(
+                description="成功获取成员详情",
+                schema=UserDetailSerializer
+            ),
+            404: openapi.Response(
+                description="成员不存在",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'detail': openapi.Schema(type=openapi.TYPE_STRING, example='未找到。')
+                    }
+                )
+            )
+        }
     )
     def retrieve(self, request, *args, **kwargs):
         return super().retrieve(request, *args, **kwargs)
     
     @swagger_auto_schema(
-        operation_description="更新成员信息（管理员）",
+        operation_summary="更新成员信息",
+        operation_description="""
+        管理员更新团队成员的信息。
+        
+        可更新的字段包括姓名、部门、角色和激活状态。
+        
+        **权限要求**: 仅管理员可访问
+        """,
+        tags=['用户管理'],
         request_body=UserUpdateSerializer,
-        responses={200: UserSerializer}
+        responses={
+            200: openapi.Response(
+                description="成员信息更新成功",
+                schema=UserSerializer
+            ),
+            400: openapi.Response(description="请求参数错误"),
+            403: openapi.Response(description="权限不足"),
+            404: openapi.Response(description="成员不存在")
+        }
     )
     def update(self, request, *args, **kwargs):
         return super().update(request, *args, **kwargs)
     
     @swagger_auto_schema(
-        operation_description="部分更新成员信息（管理员）",
+        operation_summary="部分更新成员信息",
+        operation_description="""
+        管理员部分更新团队成员的信息。
+        
+        只需要提供需要更新的字段。
+        
+        **权限要求**: 仅管理员可访问
+        """,
+        tags=['用户管理'],
         request_body=UserUpdateSerializer,
-        responses={200: UserSerializer}
+        responses={
+            200: openapi.Response(
+                description="成员信息更新成功",
+                schema=UserSerializer
+            ),
+            400: openapi.Response(description="请求参数错误"),
+            403: openapi.Response(description="权限不足"),
+            404: openapi.Response(description="成员不存在")
+        }
     )
     def partial_update(self, request, *args, **kwargs):
         return super().partial_update(request, *args, **kwargs)
     
     @action(detail=False, methods=['get'], url_path='by-department/(?P<department>[^/.]+)')
     @swagger_auto_schema(
-        operation_description="按部门查询成员",
-        responses={200: UserSerializer(many=True)}
+        operation_summary="按部门查询成员",
+        operation_description="""
+        根据部门筛选团队成员。
+        
+        支持的部门类型:
+        - hardware: 硬件部门
+        - software: 软件部门  
+        - marketing: 市场部门
+        """,
+        tags=['用户管理'],
+        manual_parameters=[
+            openapi.Parameter(
+                'department',
+                openapi.IN_PATH,
+                description="部门代码",
+                type=openapi.TYPE_STRING,
+                enum=['hardware', 'software', 'marketing'],
+                required=True
+            )
+        ],
+        responses={
+            200: openapi.Response(
+                description="成功获取部门成员列表",
+                schema=UserSerializer(many=True)
+            ),
+            400: openapi.Response(description="无效的部门参数")
+        }
     )
     def by_department(self, request, department=None):
         """按部门查询成员"""
@@ -198,8 +350,20 @@ class UserViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['get'])
     @swagger_auto_schema(
-        operation_description="获取当前登录用户信息",
-        responses={200: UserDetailSerializer}
+        operation_summary="获取当前用户信息",
+        operation_description="""
+        获取当前登录用户的详细信息。
+        
+        返回包含用户ID、邮箱、姓名、部门、角色等完整信息。
+        """,
+        tags=['用户管理'],
+        responses={
+            200: openapi.Response(
+                description="成功获取当前用户信息",
+                schema=UserDetailSerializer
+            ),
+            401: openapi.Response(description="未认证")
+        }
     )
     def me(self, request):
         """获取当前登录用户信息"""
@@ -241,6 +405,10 @@ class WorkHoursViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """根据查询参数过滤数据"""
+        # Handle Swagger schema generation
+        if getattr(self, 'swagger_fake_view', False):
+            return WorkHours.objects.none()
+            
         queryset = WorkHours.objects.select_related('user', 'recorded_by')
         
         # 按用户过滤
@@ -265,24 +433,72 @@ class WorkHoursViewSet(viewsets.ModelViewSet):
         return queryset.order_by('-month', 'user__name')
     
     @swagger_auto_schema(
-        operation_description="获取工作小时记录列表",
+        operation_summary="获取工作小时记录列表",
+        operation_description="""
+        获取工作小时记录列表，支持多种过滤条件。
+        
+        普通用户只能查看自己的记录，管理员可以查看所有记录。
+        """,
+        tags=['工作小时管理'],
         manual_parameters=[
-            openapi.Parameter('user_id', openapi.IN_QUERY, description="用户ID", type=openapi.TYPE_STRING),
-            openapi.Parameter('month', openapi.IN_QUERY, description="月份 (YYYY-MM)", type=openapi.TYPE_STRING),
-            openapi.Parameter('department', openapi.IN_QUERY, description="部门", type=openapi.TYPE_STRING),
+            openapi.Parameter(
+                'user_id', 
+                openapi.IN_QUERY, 
+                description="用户ID（UUID格式）", 
+                type=openapi.TYPE_STRING,
+                format=openapi.FORMAT_UUID
+            ),
+            openapi.Parameter(
+                'month', 
+                openapi.IN_QUERY, 
+                description="月份 (YYYY-MM格式)", 
+                type=openapi.TYPE_STRING,
+                example="2024-01"
+            ),
+            openapi.Parameter(
+                'department', 
+                openapi.IN_QUERY, 
+                description="部门", 
+                type=openapi.TYPE_STRING,
+                enum=['hardware', 'software', 'marketing']
+            ),
         ],
-        responses={200: WorkHoursSerializer(many=True)}
+        responses={
+            200: openapi.Response(
+                description="成功获取工作小时记录列表",
+                schema=WorkHoursSerializer(many=True)
+            )
+        }
     )
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
     
     @swagger_auto_schema(
-        operation_description="创建工作小时记录（管理员）",
+        operation_summary="创建工作小时记录",
+        operation_description="""
+        管理员为团队成员创建工作小时记录。
+        
+        每个用户每月只能有一条工作小时记录。
+        
+        **权限要求**: 仅管理员可访问
+        """,
+        tags=['工作小时管理'],
         request_body=WorkHoursCreateSerializer,
         responses={
-            201: WorkHoursSerializer,
-            400: "请求参数错误",
-            403: "权限不足"
+            201: openapi.Response(
+                description="工作小时记录创建成功",
+                schema=WorkHoursSerializer
+            ),
+            400: openapi.Response(
+                description="请求参数错误或记录已存在",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'error': openapi.Schema(type=openapi.TYPE_STRING, example='该用户在此月份的工作小时记录已存在，请使用更新操作')
+                    }
+                )
+            ),
+            403: openapi.Response(description="权限不足")
         }
     )
     def create(self, request, *args, **kwargs):

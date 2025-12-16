@@ -33,6 +33,10 @@ class MonthlyEvaluationViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """获取查询集"""
+        # Handle Swagger schema generation
+        if getattr(self, 'swagger_fake_view', False):
+            return MonthlyEvaluation.objects.none()
+            
         queryset = MonthlyEvaluation.objects.all()
         
         # 过滤参数
@@ -45,18 +49,43 @@ class MonthlyEvaluationViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(user_id=user_id)
         
         # 非管理员只能查看自己的评价
-        if self.request.user.role != 'admin':
+        if self.request.user.is_authenticated and hasattr(self.request.user, 'role') and self.request.user.role != 'admin':
             queryset = queryset.filter(user=self.request.user)
         
         return queryset.select_related('user', 'admin_evaluated_by').prefetch_related('peer_evaluations').order_by('-month', 'user__name')
     
     @swagger_auto_schema(
         method='post',
-        operation_description="提交自我评价",
+        operation_summary="提交自我评价",
+        operation_description="""
+        提交月度自我评价。
+        
+        包含四个维度的评价：
+        1. 企业文化理解（分值、文字、选项）
+        2. 团队契合度（选项、文字、其他员工排名）
+        3. 本月成长（分值、文字、选项）
+        4. 本月最大贡献（分值、文字、选项）
+        
+        如果该月份已有评价记录，将更新现有记录。
+        """,
+        tags=['月度评价'],
         request_body=SelfEvaluationCreateSerializer,
         responses={
-            201: MonthlyEvaluationSerializer,
-            400: "验证错误"
+            201: openapi.Response(
+                description="自我评价提交成功",
+                schema=MonthlyEvaluationSerializer
+            ),
+            400: openapi.Response(
+                description="验证错误",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'culture_understanding_score': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_STRING)),
+                        'team_fit_ranking': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_STRING)),
+                        'monthly_growth_score': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_STRING))
+                    }
+                )
+            )
         }
     )
     @action(detail=False, methods=['post'], url_path='self-evaluation')
@@ -153,7 +182,7 @@ class MonthlyEvaluationViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['patch'], url_path='admin-evaluation')
     def submit_admin_evaluation(self, request, pk=None):
         """管理员提交最终评价"""
-        if request.user.role != 'admin':
+        if not (request.user.is_authenticated and hasattr(request.user, 'role') and request.user.role == 'admin'):
             return Response(
                 {'error': '只有管理员才能提交最终评价'},
                 status=status.HTTP_403_FORBIDDEN
@@ -316,7 +345,7 @@ class MonthlyEvaluationViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(monthly_evaluation__user_id=evaluee_id)
         
         # 非管理员只能查看自己给出的评价
-        if request.user.role != 'admin':
+        if request.user.is_authenticated and hasattr(request.user, 'role') and request.user.role != 'admin':
             queryset = queryset.filter(evaluator=request.user)
         
         peer_evaluations = queryset.select_related(
@@ -348,7 +377,7 @@ class MonthlyEvaluationViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='admin-view-all')
     def admin_view_all_evaluations(self, request):
         """管理员查看所有成员的月度评价详情"""
-        if request.user.role != 'admin':
+        if not (request.user.is_authenticated and hasattr(request.user, 'role') and request.user.role == 'admin'):
             return Response(
                 {'error': '只有管理员才能查看所有成员评价'},
                 status=status.HTTP_403_FORBIDDEN
@@ -408,7 +437,7 @@ class MonthlyEvaluationViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='admin-history')
     def get_admin_evaluation_history(self, request):
         """获取管理员评价历史记录"""
-        if request.user.role != 'admin':
+        if not (request.user.is_authenticated and hasattr(request.user, 'role') and request.user.role == 'admin'):
             return Response(
                 {'error': '只有管理员才能查看评价历史'},
                 status=status.HTTP_403_FORBIDDEN
@@ -470,7 +499,7 @@ class MonthlyEvaluationViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'], url_path='batch-admin-evaluation')
     def batch_admin_evaluation(self, request):
         """批量提交管理员最终评价"""
-        if request.user.role != 'admin':
+        if not (request.user.is_authenticated and hasattr(request.user, 'role') and request.user.role == 'admin'):
             return Response(
                 {'error': '只有管理员才能提交最终评价'},
                 status=status.HTTP_403_FORBIDDEN
@@ -621,6 +650,10 @@ class WorkHoursViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """获取查询集"""
+        # Handle Swagger schema generation
+        if getattr(self, 'swagger_fake_view', False):
+            return WorkHours.objects.none()
+            
         queryset = WorkHours.objects.all()
         
         # 过滤参数
@@ -633,7 +666,7 @@ class WorkHoursViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(user_id=user_id)
         
         # 非管理员只能查看自己的工作小时
-        if self.request.user.role != 'admin':
+        if self.request.user.is_authenticated and hasattr(self.request.user, 'role') and self.request.user.role != 'admin':
             queryset = queryset.filter(user=self.request.user)
         
         return queryset.select_related('user', 'recorded_by').order_by('-month', 'user__name')
@@ -646,7 +679,7 @@ class WorkHoursViewSet(viewsets.ModelViewSet):
     
     def create(self, request, *args, **kwargs):
         """创建工作小时记录（仅管理员）"""
-        if request.user.role != 'admin':
+        if not (request.user.is_authenticated and hasattr(request.user, 'role') and request.user.role == 'admin'):
             return Response(
                 {'error': '只有管理员才能录入工作小时'},
                 status=status.HTTP_403_FORBIDDEN
@@ -656,7 +689,7 @@ class WorkHoursViewSet(viewsets.ModelViewSet):
     
     def update(self, request, *args, **kwargs):
         """更新工作小时记录（仅管理员）"""
-        if request.user.role != 'admin':
+        if not (request.user.is_authenticated and hasattr(request.user, 'role') and request.user.role == 'admin'):
             return Response(
                 {'error': '只有管理员才能修改工作小时'},
                 status=status.HTTP_403_FORBIDDEN
@@ -666,7 +699,7 @@ class WorkHoursViewSet(viewsets.ModelViewSet):
     
     def destroy(self, request, *args, **kwargs):
         """删除工作小时记录（仅管理员）"""
-        if request.user.role != 'admin':
+        if not (request.user.is_authenticated and hasattr(request.user, 'role') and request.user.role == 'admin'):
             return Response(
                 {'error': '只有管理员才能删除工作小时'},
                 status=status.HTTP_403_FORBIDDEN

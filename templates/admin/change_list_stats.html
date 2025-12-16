@@ -1,0 +1,109 @@
+{% if total_tasks or total_reviews or total_evaluations or total_records %}
+<div class="stats-container">
+    <h3 style="color: #007BFF; margin-bottom: 15px;">📊 数据统计</h3>
+    
+    {% if total_tasks %}
+    <div class="stats-item">
+        <div><strong>{{ total_tasks }}</strong></div>
+        <div>总任务数</div>
+    </div>
+    <div class="stats-item">
+        <div><strong>{{ completed_tasks }}</strong></div>
+        <div>已完成</div>
+    </div>
+    <div class="stats-item">
+        <div><strong>{{ in_progress_tasks }}</strong></div>
+        <div>进行中</div>
+    </div>
+    <div class="stats-item">
+        <div><strong>{{ postponed_tasks }}</strong></div>
+        <div>已推迟</div>
+    </div>
+    <div class="stats-item">
+        <div><strong>{{ avg_difficulty }}</strong></div>
+        <div>平均难度</div>
+    </div>
+    {% endif %}
+    
+    {% if total_reviews %}
+    <div class="stats-item">
+        <div><strong>{{ total_reviews }}</strong></div>
+        <div>总评价数</div>
+    </div>
+    <div class="stats-item">
+        <div><strong>{{ task_reviews }}</strong></div>
+        <div>任务评价</div>
+    </div>
+    <div class="stats-item">
+        <div><strong>{{ monthly_reviews }}</strong></div>
+        <div>月度评价</div>
+    </div>
+    <div class="stats-item">
+        <div><strong>{{ avg_rating }}</strong></div>
+        <div>平均评分</div>
+    </div>
+    <div class="stats-item">
+        <div><strong>{{ anonymous_count }}</strong></div>
+        <div>匿名评价</div>
+    </div>
+    {% endif %}
+    
+    {% if total_evaluations %}
+    <div class="stats-item">
+        <div><strong>{{ total_evaluations }}</strong></div>
+        <div>总评价数</div>
+    </div>
+    <div class="stats-item">
+        <div><strong>{{ admin_evaluated }}</strong></div>
+        <div>已管理员评价</div>
+    </div>
+    <div class="stats-item">
+        <div><strong style="color: #DC3545;">{{ pending_admin }}</strong></div>
+        <div>待管理员评价</div>
+    </div>
+    <div class="stats-item">
+        <div><strong>{{ avg_culture_score }}</strong></div>
+        <div>平均文化理解分</div>
+    </div>
+    <div class="stats-item">
+        <div><strong>{{ avg_growth_score }}</strong></div>
+        <div>平均成长分</div>
+    </div>
+    <div class="stats-item">
+        <div><strong>{{ avg_contribution_score }}</strong></div>
+        <div>平均贡献分</div>
+    </div>
+    {% endif %}
+    
+    {% if total_records %}
+    <div class="stats-item">
+        <div><strong>{{ total_records }}</strong></div>
+        <div>总记录数</div>
+    </div>
+    <div class="stats-item">
+        <div><strong>{{ avg_score }}</strong></div>
+        <div>平均分值</div>
+    </div>
+    <div class="stats-item">
+        <div><strong>{{ max_score }}</strong></div>
+        <div>最高分值</div>
+    </div>
+    <div class="stats-item">
+        <div><strong>{{ min_score }}</strong></div>
+        <div>最低分值</div>
+    </div>
+    {% endif %}
+    
+    {% if dept_stats %}
+    <div style="margin-top: 15px;">
+        <h4 style="color: #6c757d;">部门平均分值：</h4>
+        {% for dept_name, avg_score in dept_stats.items %}
+        <div class="stats-item">
+            <div><strong>{{ avg_score }}</strong></div>
+            <div>{{ dept_name }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endif %}

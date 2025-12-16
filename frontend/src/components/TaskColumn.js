@@ -3,7 +3,7 @@ import { useDrop } from 'react-dnd';
 import TaskCard from './TaskCard';
 import PostponeReasonModal from './PostponeReasonModal';
 
-const TaskColumn = ({ status, title, tasks, onTaskMove, onTaskClick, currentUser }) => {
+const TaskColumn = ({ status, title, tasks, onTaskMove, onTaskClick, onTaskReview, currentUser }) => {
   const [showPostponeModal, setShowPostponeModal] = useState(false);
   const [postponeTaskId, setPostponeTaskId] = useState(null);
 
@@ -77,6 +77,7 @@ const TaskColumn = ({ status, title, tasks, onTaskMove, onTaskClick, currentUser
             key={task.id}
             task={task}
             onClick={() => onTaskClick(task)}
+            onReview={onTaskReview}
             currentUser={currentUser}
           />
         ))}
