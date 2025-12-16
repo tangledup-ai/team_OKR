@@ -31,6 +31,7 @@ const TaskBoard = () => {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewTask, setReviewTask] = useState(null);
   const [users, setUsers] = useState([]);
+  const [usersError, setUsersError] = useState('');
 
   useEffect(() => {
     loadTasks();
@@ -52,10 +53,12 @@ const TaskBoard = () => {
 
   const loadUsers = async () => {
     try {
+      setUsersError('');
       const data = await taskService.getUsers();
       setUsers(data.results || data);
     } catch (err) {
       console.error('Error loading users:', err);
+      setUsersError('无法加载用户列表');
     }
   };
 
@@ -152,6 +155,7 @@ const TaskBoard = () => {
         <TaskModal
           task={selectedTask}
           users={users}
+          usersError={usersError}
           onClose={() => setSelectedTask(null)}
           onUpdate={handleTaskUpdate}
           currentUser={user}
@@ -161,6 +165,7 @@ const TaskBoard = () => {
       {showCreateModal && (
         <CreateTaskModal
           users={users}
+          usersError={usersError}
           onClose={() => setShowCreateModal(false)}
           onCreate={handleTaskCreate}
           currentUser={user}

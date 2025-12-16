@@ -153,6 +153,15 @@ POST /api/users/token/refresh/
     "refresh": "<refresh_token>"
 }
 ```
+根据代码库中的配置（具体在 apps/users/management/commands/create_test_users.py 文件中），默认的管理员账号和密码如下：
+
+- 账号 : admin@example.com
+- 密码 : admin123
+此外，还有其他部门的测试账号可供使用：
+
+- 软件部门: software@example.com / user123
+- 硬件部门: hardware@example.com / user123
+- 市场部门: marketing@example.com / user123
 
 ## 部署
 

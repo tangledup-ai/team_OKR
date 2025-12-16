@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { XMarkIcon, UserIcon, CalendarIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
 
-const TaskModal = ({ task, users, onClose, onUpdate, currentUser }) => {
+const TaskModal = ({ task, users, usersError, onClose, onUpdate, currentUser }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     title: task.title,
@@ -171,12 +171,15 @@ const TaskModal = ({ task, users, onClose, onUpdate, currentUser }) => {
                 onChange={(e) => setFormData(prev => ({ ...prev, owner: e.target.value }))}
               >
                 <option value="">请选择负责人</option>
-                {users.map(user => (
+                {Array.isArray(users) && users.map(user => (
                   <option key={user.id} value={user.id}>
                     {user.name} ({user.department})
                   </option>
                 ))}
               </select>
+              {usersError && (
+                <p className="mt-1 text-sm text-red-600">{usersError}</p>
+              )}
             </div>
 
             <div>
@@ -184,7 +187,7 @@ const TaskModal = ({ task, users, onClose, onUpdate, currentUser }) => {
                 协作者
               </label>
               <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-2">
-                {users.filter(user => user.id !== formData.owner).map(user => (
+                {Array.isArray(users) && users.filter(user => user.id !== formData.owner).map(user => (
                   <label key={user.id} className="flex items-center py-1">
                     <input
                       type="checkbox"

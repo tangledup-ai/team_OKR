@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
-const CreateTaskModal = ({ users, onClose, onCreate, currentUser }) => {
+const CreateTaskModal = ({ users, usersError, onClose, onCreate, currentUser }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -130,12 +130,15 @@ const CreateTaskModal = ({ users, onClose, onCreate, currentUser }) => {
               onChange={(e) => setFormData(prev => ({ ...prev, owner: e.target.value }))}
             >
               <option value="">请选择负责人</option>
-              {users.map(user => (
+              {Array.isArray(users) && users.map(user => (
                 <option key={user.id} value={user.id}>
                   {user.name} ({user.department})
                 </option>
               ))}
             </select>
+            {usersError && (
+              <p className="mt-1 text-sm text-red-600">{usersError}</p>
+            )}
           </div>
 
           <div>
@@ -143,7 +146,7 @@ const CreateTaskModal = ({ users, onClose, onCreate, currentUser }) => {
               协作者
             </label>
             <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-2">
-              {users.filter(user => user.id !== formData.owner).map(user => (
+              {Array.isArray(users) && users.filter(user => user.id !== formData.owner).map(user => (
                 <label key={user.id} className="flex items-center py-1">
                   <input
                     type="checkbox"
